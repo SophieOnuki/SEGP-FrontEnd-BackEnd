@@ -22,7 +22,7 @@ export function StatusIndicator({ isConnected }: StatusIndicatorProps) {
           </>
         )}
       </Badge>
-      <span className="text-sm text-gray-600">Raspberry Pi</span>
+      <span className="text-sm text-gray-600">Odroid</span>
     </div>
   );
 }

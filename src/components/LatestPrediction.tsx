@@ -1,15 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Weight, Box, Clock } from "lucide-react";
-import { ImageWithFallback } from "./figma/ImageWithFallback";
-
-interface Prediction {
-  id: string;
-  weight: number;
-  volume?: number;
-  timestamp: Date;
-  imageUrl?: string;
-}
+import { ImageWithFallback } from "./ImageWithFallback";
+import { Prediction } from "../types";
+import { DEFAULT_FFB_IMAGE } from "../constants/images";
 
 interface LatestPredictionProps {
   prediction: Prediction | null;
@@ -74,7 +68,7 @@ export function LatestPrediction({ prediction }: LatestPredictionProps) {
             <p className="text-sm text-gray-600 mb-3">Captured Image</p>
             <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
               <ImageWithFallback
-                src={prediction.imageUrl || "https://images.unsplash.com/photo-1593113598332-cd288d649433?w=600"}
+                src={prediction.imageUrl || DEFAULT_FFB_IMAGE}
                 alt="FFB Capture"
                 className="w-full h-full object-cover"
               />

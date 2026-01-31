@@ -1,15 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Download, Trash2, Weight, Clock } from "lucide-react";
-import { ImageWithFallback } from "./figma/ImageWithFallback";
-
-interface Prediction {
-  id: string;
-  weight: number;
-  volume?: number;
-  timestamp: Date;
-  imageUrl?: string;
-}
+import { ImageWithFallback } from "./ImageWithFallback";
+import { Prediction } from "../types";
+import { DEFAULT_FFB_IMAGE } from "../constants/images";
 
 interface PredictionHistoryProps {
   predictions: Prediction[];
@@ -50,7 +44,7 @@ export function PredictionHistory({ predictions, onExportCSV, onClearHistory }: 
                 <div className="flex gap-4">
                   <div className="w-24 h-24 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
                     <ImageWithFallback
-                      src={prediction.imageUrl || "https://images.unsplash.com/photo-1593113598332-cd288d649433?w=200"}
+                      src={prediction.imageUrl || DEFAULT_FFB_IMAGE}
                       alt="FFB"
                       className="w-full h-full object-cover"
                     />

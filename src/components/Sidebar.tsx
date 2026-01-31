@@ -53,7 +53,7 @@ export function Sidebar() {
             <AccordionItem value="item-1">
               <AccordionTrigger className="text-sm">How to use</AccordionTrigger>
               <AccordionContent className="text-sm text-gray-600">
-                The dashboard automatically displays FFB weight predictions from the connected Raspberry Pi camera system. Predictions appear in real-time with captured images.
+                The dashboard automatically displays FFB weight predictions from the connected Odroid camera system. Predictions appear in real-time with captured images.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="item-2">
@@ -65,7 +65,7 @@ export function Sidebar() {
             <AccordionItem value="item-3">
               <AccordionTrigger className="text-sm">Connection Status</AccordionTrigger>
               <AccordionContent className="text-sm text-gray-600">
-                The status indicator shows green when connected to the Raspberry Pi, and red when disconnected. Check your network connection if disconnected.
+                The status indicator shows green when connected to the Odroid, and red when disconnected. Check your network connection if disconnected.
               </AccordionContent>
             </AccordionItem>
           </Accordion>
