@@ -29,8 +29,11 @@ export interface HealthCheckResponse {
     model_loaded: boolean;
 }
 
-/** Upload a file to the backend API. */
-export async function uploadBagFile(file: File, fileType: 'RGB_D' | 'Depth') {
+/** Backend expects file_type "RGB-D" or "Depth"; upload inserts a row into the files table (SQL). */
+export type BagFileType = 'RGB-D' | 'Depth';
+
+/** Upload a .bag file; backend saves it and inserts a record into the database. */
+export async function uploadBagFile(file: File, fileType: BagFileType) {
     try {
         const formData = new FormData();
         formData.append('file', file);
@@ -41,12 +44,11 @@ export async function uploadBagFile(file: File, fileType: 'RGB_D' | 'Depth') {
             body: formData,
         });
 
+        const data = await response.json().catch(() => ({}));
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(`Error uploading file: ${error.message}`);
+            throw new Error(data?.error ?? response.statusText);
         }
-
-        return response.json();
+        return data;
     } catch (error) {
         console.error('Error uploading file:', error);
         throw error;

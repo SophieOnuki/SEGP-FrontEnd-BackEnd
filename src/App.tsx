@@ -118,6 +118,7 @@ export default function App() {
             predictions={predictions}
             onExportCSV={handleExportCSV}
             onClearHistory={handleClearHistory}
+            onUploadSuccess={loadPredictions}
         />
 
         <Toaster/>
