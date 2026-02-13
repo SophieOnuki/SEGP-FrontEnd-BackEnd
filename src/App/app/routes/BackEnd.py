@@ -1,12 +1,31 @@
-from flask import Flask, request, jsonify, Blueprint
+import sys
+
+from flask import request, jsonify, Blueprint
 import os
-from app.models import File
 from app import SessionLocal
+import logging
+
+# Set up logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+# Create console handler
+if not logger.handlers:
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
 bp = Blueprint('back_end', __name__)
 
 @bp.route('/upload', methods=['POST'])
 def upload_file():
+    logger.info('='*50)
+    logger.info("Received file upload request")
+    logger.info('=' * 50)
+    from app.models import File  # Import inside function to avoid circular import
+
     file = request.files.get('file')
     file_type = request.form.get('file_type')
 
@@ -20,8 +39,8 @@ def upload_file():
     file_path = os.path.join(upload_dir, file.filename)
     file.save(file_path)
 
+    db = SessionLocal()
     try:
-        db = SessionLocal()
         new_file = File(
             file_name=file.filename,
             file_type=file_type,
@@ -31,9 +50,10 @@ def upload_file():
         db.commit()
         db.refresh(new_file)
 
-        return jsonify({"message": "File successfully uploaded", "file_id": new_file.file_id})
+        return jsonify({"message": "File successfully uploaded", "file_id": new_file.file_id}), 200
 
     except Exception as e:
+        db.rollback()
         return jsonify({'error': f'Failed to upload file: {str(e)}'}), 500
 
     finally:

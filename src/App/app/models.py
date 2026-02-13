@@ -9,6 +9,7 @@ class File(Base):
     file_id = Column(Integer, primary_key=True, autoincrement=True)
     file_name = Column(String(255), nullable=False)
     file_type = Column(Enum("RGB-D", "Depth"), nullable=False)
+    file_path = Column(String(500), nullable=False)
     upload_date = Column(TIMESTAMP, default=func.now())
 
     predictions = relationship("Prediction", back_populates="file")

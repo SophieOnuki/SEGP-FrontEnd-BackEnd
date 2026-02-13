@@ -33,32 +33,43 @@ export function UploadBagButton({ onUploadSuccess, disabled }: UploadBagButtonPr
   const [uploading, setUploading] = useState(false);
 
   const handleButtonClick = () => {
+    console.log("Opening file selector for .bag file");
     inputRef.current?.click();
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("File selected");
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.name.toLowerCase().endsWith(".bag")) {
+      console.log("Invalid file type selected:", file.name);
       toast.error("Please select a .bag file.");
       return;
     }
+
     setSelectedFile(file);
     setFileType("RGB-D");
+    console.log("Upload button clicked, opening dialog");
     setDialogOpen(true);
+    console.log("Dialog render, open:", dialogOpen, "file:", selectedFile?.name)
+    alert("Dialog should now be visible! Look for popup with Import/Cancel buttons")
     e.target.value = "";
   };
 
   const handleImport = async () => {
+    console.log("Starting import of .bag file");
     if (!selectedFile) return;
+    alert("IMPORT BUTTON CLICKED!")
     setUploading(true);
     try {
       await uploadBagFile(selectedFile, fileType);
+      console.log("File imported successfully");
       toast.success("Bag file imported successfully.");
       setDialogOpen(false);
       setSelectedFile(null);
       onUploadSuccess?.();
     } catch (err) {
+      console.log("Error importing .bag file:", err);
       toast.error(err instanceof Error ? err.message : "Failed to import .bag file.");
     } finally {
       setUploading(false);
@@ -133,7 +144,7 @@ export function UploadBagButton({ onUploadSuccess, disabled }: UploadBagButtonPr
             >
               Cancel
             </Button>
-            <Button onClick={handleImport} disabled={uploading}>
+            <Button onClick={() => handleImport()}>
               {uploading ? "Importing…" : "Import"}
             </Button>
           </DialogFooter>

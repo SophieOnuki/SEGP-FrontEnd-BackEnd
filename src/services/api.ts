@@ -34,23 +34,47 @@ export type BagFileType = 'RGB-D' | 'Depth';
 
 /** Upload a .bag file; backend saves it and inserts a record into the database. */
 export async function uploadBagFile(file: File, fileType: BagFileType) {
+    console.log("=".repeat(50))
+    console.log("Uploading file:", file.name, "of type:", fileType);
+    console.log("API URL:", `${API_BASE_URL}/api/upload`);
     try {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('file_type', fileType);
 
+        console.log("FormData created");
+        console.log("Making fetch request...");
+
         const response = await fetch(`${API_BASE_URL}/api/upload`, {
             method: 'POST',
             body: formData,
+
         });
 
+        console.log("Response received:");
+        console.log("  Status:", response.status);
+        console.log("  Status Text:", response.statusText);
+        console.log("  Headers:", Object.fromEntries(response.headers.entries()));
+
         const data = await response.json().catch(() => ({}));
+        console.log("Response data:", data);
         if (!response.ok) {
+            console.error("Upload failed with status:", data?.error);
             throw new Error(data?.error ?? response.statusText);
         }
+
+        console.log("✓ Upload successful!");
+        console.log("=".repeat(50));
         return data;
     } catch (error) {
+        console.error("=".repeat(50));
         console.error('Error uploading file:', error);
+        console.error("Error type:", error instanceof Error ? error.constructor.name : typeof error);
+        if (error instanceof Error) {
+            console.error("Error message:", error.message);
+            console.error("Error stack:", error.stack);
+        }
+        console.error("=".repeat(50));
         throw error;
     }
 }
