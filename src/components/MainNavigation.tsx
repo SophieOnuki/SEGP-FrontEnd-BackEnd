@@ -10,6 +10,7 @@ interface MainNavigationProps {
   predictions: Prediction[];
   onExportCSV: () => void;
   onClearHistory: () => void;
+  onUploadSuccess?: () => void;
 }
 
 export function MainNavigation({
@@ -18,6 +19,7 @@ export function MainNavigation({
   predictions,
   onExportCSV,
   onClearHistory,
+  onUploadSuccess,
 }: MainNavigationProps) {
   return (
     <Tabs defaultValue="dashboard" className="w-full">
@@ -44,6 +46,7 @@ export function MainNavigation({
           predictions={predictions}
           onExportCSV={onExportCSV}
           onClearHistory={onClearHistory}
+          onUploadSuccess={onUploadSuccess}
         />
       </TabsContent>
 
