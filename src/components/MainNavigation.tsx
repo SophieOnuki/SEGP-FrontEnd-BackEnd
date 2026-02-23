@@ -3,11 +3,13 @@ import { DashboardPage } from "./DashboardPage";
 import { InformaticsPage } from "./InformaticsPage";
 import { UserManual } from "./UserManual";
 import { Prediction } from "../types";
+import type { BagFile } from "../services/api";
 
 interface MainNavigationProps {
   isConnected: boolean;
   latestPrediction: Prediction | null;
   predictions: Prediction[];
+  bagFiles: BagFile[];
   onExportCSV: () => void;
   onClearHistory: () => void;
   onUploadSuccess?: () => void;
@@ -17,6 +19,7 @@ export function MainNavigation({
   isConnected,
   latestPrediction,
   predictions,
+  bagFiles,
   onExportCSV,
   onClearHistory,
   onUploadSuccess,
@@ -44,6 +47,7 @@ export function MainNavigation({
           isConnected={isConnected}
           latestPrediction={latestPrediction}
           predictions={predictions}
+          bagFiles={bagFiles}
           onExportCSV={onExportCSV}
           onClearHistory={onClearHistory}
           onUploadSuccess={onUploadSuccess}

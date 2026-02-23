@@ -32,6 +32,29 @@ export interface HealthCheckResponse {
 /** Backend expects file_type "RGB-D" or "Depth"; upload inserts a row into the files table (SQL). */
 export type BagFileType = 'RGB-D' | 'Depth';
 
+/** Imported bag file record from the backend (files table). */
+export interface BagFile {
+    file_id: number;
+    file_name: string;
+    file_type: string;
+    file_path: string;
+    upload_date: string | null;
+}
+
+/**
+ * Fetch all imported bag files from the backend.
+ */
+export async function getBagFiles(): Promise<BagFile[]> {
+    const response = await fetch(`${API_BASE_URL}/api/files`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+    });
+    if (!response.ok) {
+        throw new Error(`Error fetching bag files: ${response.statusText}`);
+    }
+    return response.json();
+}
+
 /** Upload a .bag file; backend saves it and inserts a record into the database. */
 export async function uploadBagFile(file: File, fileType: BagFileType) {
     console.log("=".repeat(50))

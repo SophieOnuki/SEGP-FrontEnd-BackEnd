@@ -19,6 +19,29 @@ if not logger.handlers:
 
 bp = Blueprint('back_end', __name__)
 
+
+@bp.route('/files', methods=['GET'])
+def list_files():
+    """List all imported bag files (from the files table)."""
+    from app.models import File  # Import inside function to avoid circular import
+
+    db = SessionLocal()
+    try:
+        files = db.query(File).order_by(File.upload_date.desc()).all()
+        return jsonify([
+            {
+                'file_id': f.file_id,
+                'file_name': f.file_name,
+                'file_type': f.file_type,
+                'file_path': f.file_path,
+                'upload_date': f.upload_date.isoformat() if f.upload_date else None,
+            }
+            for f in files
+        ]), 200
+    finally:
+        db.close()
+
+
 @bp.route('/upload', methods=['POST'])
 def upload_file():
     logger.info('='*50)

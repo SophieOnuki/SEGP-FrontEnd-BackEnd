@@ -19,8 +19,10 @@ import {
   checkBackendHealth,
   deleteAllPredictions,
   deletePrediction,
-  exportPredictionsCSV
+  exportPredictionsCSV,
+  getBagFiles,
 } from "./services/api";
+import type { BagFile } from "./services/api";
 
 // // Constants
 // import { mockPredictions } from "./constants/mockData";
@@ -32,6 +34,7 @@ export default function App() {
   const [showCover, setShowCover] = useState(true);
   const [isConnected, setIsConnected] = useState(false); // Would be updated via WebSocket in production
   const [predictions, setPredictions] = useState<Prediction[]>([]);
+  const [bagFiles, setBagFiles] = useState<BagFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Derive latest prediction from predictions array (always first item)
@@ -46,6 +49,7 @@ export default function App() {
 
       if (healthy) {
         loadPredictions();
+        loadBagFiles();
       } else {
         setIsLoading(false);
       }
@@ -75,6 +79,19 @@ export default function App() {
     }
   };
 
+  const loadBagFiles = async () => {
+    try {
+      const files = await getBagFiles();
+      setBagFiles(files);
+    } catch (error) {
+      console.error("Failed to load bag files:", error);
+    }
+  };
+
+  const handleUploadSuccess = () => {
+    loadPredictions();
+    loadBagFiles();
+  };
 
   const handleExportCSV = async () => {
     try {
@@ -116,9 +133,10 @@ export default function App() {
             isConnected={isConnected}
             latestPrediction={latestPrediction}
             predictions={predictions}
+            bagFiles={bagFiles}
             onExportCSV={handleExportCSV}
             onClearHistory={handleClearHistory}
-            onUploadSuccess={loadPredictions}
+            onUploadSuccess={handleUploadSuccess}
         />
 
         <Toaster/>

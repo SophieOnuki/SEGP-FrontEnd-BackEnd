@@ -2,7 +2,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Download, Trash2, Weight, Clock } from "lucide-react";
 import { ImageWithFallback } from "./ImageWithFallback";
-import { UploadBagButton } from "./UploadBagButton";
 import { Prediction } from "../types";
 import { DEFAULT_FFB_IMAGE } from "../constants/images";
 
@@ -10,17 +9,15 @@ interface PredictionHistoryProps {
   predictions: Prediction[];
   onExportCSV: () => void;
   onClearHistory: () => void;
-  onUploadSuccess?: () => void;
 }
 
-export function PredictionHistory({ predictions, onExportCSV, onClearHistory, onUploadSuccess }: PredictionHistoryProps) {
+export function PredictionHistory({ predictions, onExportCSV, onClearHistory }: PredictionHistoryProps) {
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Prediction History</CardTitle>
           <div className="flex gap-2">
-            <UploadBagButton onUploadSuccess={onUploadSuccess} />
             <Button onClick={onExportCSV} variant="outline" size="sm" className="gap-2">
               <Download className="w-4 h-4" />
               Export CSV
