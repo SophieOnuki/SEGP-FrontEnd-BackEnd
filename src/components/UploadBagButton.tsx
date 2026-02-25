@@ -45,7 +45,8 @@ export function UploadBagButton({ onUploadSuccess, disabled }: UploadBagButtonPr
     }
     setSelectedFile(file);
     setFileType("RGB-D");
-    setDialogOpen(true);
+    // Defer opening so focus can leave the trigger; avoids "Blocked aria-hidden" warning
+    requestAnimationFrame(() => setDialogOpen(true));
     e.target.value = "";
   };
 
