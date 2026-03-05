@@ -52,10 +52,21 @@ def upload_file():
     file = request.files.get('file')
     file_type = request.form.get('file_type')
 
+    # Debug: Log received data
+    logger.debug(f"📁 File object: {file}")
+    logger.debug(f"📝 File type selected: {file_type}")
+    logger.debug(f"📋 Request form data: {request.form}")
+    logger.debug(f"📋 Request files: {request.files}")
+
     if not file or not file.filename.endswith(".bag"):
+        logger.warning(f"✗ Invalid file type. Filename: {file.filename if file else 'None'}")
         return jsonify({'error': 'Invalid file type. Please upload a .bag file.'}), 400
     if not file_type or file_type not in ["RGB-D", "Depth"]:
+        logger.warning(f"✗ Invalid file_type value: {file_type}")
         return jsonify({'error': 'Invalid file type. Please upload a RGB-D or Depth file.'}), 400
+
+    logger.info(f"✓File validation passed: {file.filename}. Valid file and file type received. Proceeding with upload.")
+
 
     upload_dir = os.path.join(os.getcwd(), 'uploads')
     os.makedirs(upload_dir, exist_ok=True)

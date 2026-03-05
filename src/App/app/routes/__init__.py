@@ -1,5 +1,5 @@
 from flask import Blueprint
-from .BackEnd import bp as backend_bp
+from app.routes.BackEnd import bp as backend_bp
 from .Predictions import bp as predictions_bp
 
 def register_routes(app):

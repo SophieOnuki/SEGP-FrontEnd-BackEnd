@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, jsonify
 from flask_cors import CORS
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine
@@ -17,7 +17,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 def create_app():
     """Create and configure Flask application"""
     app = Flask(__name__)
-    CORS(app)
+    CORS(app, supports_credentials=True, origins=['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:3000', 'http://127.0.0.1:5173'])
 
     # Configure file paths
     app.config["UPLOAD_FOLDER"] = os.path.join(os.getcwd(), "uploads")
@@ -36,3 +36,4 @@ def init_db():
     """Initialize SQLAlchemy database structure"""
     import app.models  # Ensure models are loaded
     Base.metadata.create_all(engine)
+

@@ -59,7 +59,9 @@ export async function getBagFiles(): Promise<BagFile[]> {
 export async function uploadBagFile(file: File, fileType: BagFileType) {
     console.log("=".repeat(50))
     console.log("Uploading file:", file.name, "of type:", fileType);
+    console.log("File size:", file.size, "bytes");
     console.log("API URL:", `${API_BASE_URL}/api/upload`);
+
     try {
         const formData = new FormData();
         formData.append('file', file);
@@ -74,17 +76,32 @@ export async function uploadBagFile(file: File, fileType: BagFileType) {
 
         });
 
-        console.log("Response received:");
-        console.log("  Status:", response.status);
-        console.log("  Status Text:", response.statusText);
-        console.log("  Headers:", Object.fromEntries(response.headers.entries()));
+        console.log("Response status:", response.status);
 
-        const data = await response.json().catch(() => ({}));
-        console.log("Response data:", data);
-        if (!response.ok) {
-            console.error("Upload failed with status:", data?.error);
-            throw new Error(data?.error ?? response.statusText);
+        const text = await response.text();
+        console.log("Raw response text:", text);
+
+        // console.log("Response received:");
+        // console.log("  Status:", response.status);
+        // console.log("  Status Text:", response.statusText);
+        // console.log("  Headers:", Object.fromEntries(response.headers.entries()));
+
+        let data;
+        try {
+            data = JSON.parse(text);
+        }catch(e) {
+            console.error("Failed to parse response as JSON:", e);
+            throw new Error ("Invalid response from server: ");
         }
+        if (!response.ok) {
+            throw new Error(data?.error || `Upload failed with status ${response.status}`);
+        }
+        // const data = await response.json().catch(() => ({}));
+        // console.log("Response data:", data);
+        // if (!response.ok) {
+        //     console.error("Upload failed with status:", data?.error);
+        //     throw new Error(data?.error ?? response.statusText);
+        // }
 
         console.log("✓ Upload successful!");
         console.log("=".repeat(50));
@@ -92,11 +109,11 @@ export async function uploadBagFile(file: File, fileType: BagFileType) {
     } catch (error) {
         console.error("=".repeat(50));
         console.error('Error uploading file:', error);
-        console.error("Error type:", error instanceof Error ? error.constructor.name : typeof error);
-        if (error instanceof Error) {
-            console.error("Error message:", error.message);
-            console.error("Error stack:", error.stack);
-        }
+        // console.error("Error type:", error instanceof Error ? error.constructor.name : typeof error);
+        // if (error instanceof Error) {
+        //     console.error("Error message:", error.message);
+        //     console.error("Error stack:", error.stack);
+        // }
         console.error("=".repeat(50));
         throw error;
     }
