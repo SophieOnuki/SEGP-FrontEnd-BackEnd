@@ -1,3 +1,4 @@
+import * as React from "react";
 import { useRef, useState } from "react";
 import { Button } from "./ui/button";
 import {
@@ -20,28 +21,33 @@ import { Upload } from "lucide-react";
 import { toast } from "sonner";
 import { uploadBagFile, type BagFileType } from "../services/api";
 
+// Button + modal flow for importing a .bag recording and registering it via the API.
+// The user first picks a file, then chooses the logical type (e.g. RGB-D vs Depth) before upload.
 interface UploadBagButtonProps {
   onUploadSuccess?: () => void;
   disabled?: boolean;
 }
 
 export function UploadBagButton({ onUploadSuccess, disabled }: UploadBagButtonProps) {
+  // UI state for the inline modal and the current upload.
   const [showTypeModal, setShowTypeModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileType, setFileType] = useState<BagFileType>("RGB-D");
   const [uploading, setUploading] = useState(false);
 
-  // Add a ref to track if we're in the process of selecting a file
+  // Tracks whether we're currently in the process of opening a file picker (reserved for future use).
   const isSelectingFile = useRef(false);
   const handleButtonClick = () => {
     console.log("Button clicked, opening file dialog...");
 
-  // Create a temporary file input
+  // Create a temporary file input instead of keeping one in the JSX tree.
+  // This avoids layout concerns and lets us fully control its lifecycle.
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = '.bag';
   input.style.display = 'none';
 
+  // Handle the file the user picked in the native file dialog.
   input.onchange = (e: Event) => {
     const file = (e.target as HTMLInputElement).files?.[0];
     console.log("File selected via temp input:", file?.name);
@@ -51,12 +57,14 @@ export function UploadBagButton({ onUploadSuccess, disabled }: UploadBagButtonPr
       return;
     }
 
+    // Guard against wrong extensions early; backend expects a .bag recording.
     if (!file.name.toLowerCase().endsWith('.bag')) {
       toast.error("Please select a .bag file.");
       document.body.removeChild(input)
       return;
     }
 
+    // Persist the chosen file and show the type-selection modal.
     setSelectedFile(file);
     setFileType("RGB-D");
     setShowTypeModal(true);
@@ -68,36 +76,21 @@ export function UploadBagButton({ onUploadSuccess, disabled }: UploadBagButtonPr
   input.click();
 };
 
+  // Called when the user confirms the import from the modal.
   const handleImport = async () => {
-    console.log("=== HANDLE IMPORT CALLED ===");
-    console.log("selectedFile:", selectedFile);
-    console.log("fileType:", fileType);
-    const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-    console.log("API_BASE_URL:", apiUrl);
-
     if (!selectedFile) {
       console.log("ERROR: No file selected for import!");
       toast.error("No file selected for import.");
       return;
     }
 
+    // Mark UI as busy while the upload is in flight.
     setUploading(true);
-    console.log("Calling uploadBagFile with:", selectedFile.name, selectedFile.size);
-
     try {
-        console.log("File details:", {
-            name: selectedFile.name,
-            size: selectedFile.size,
-            type: selectedFile.type,
-            lastModified: new Date(selectedFile.lastModified).toLocaleString(),
-        });
-
         const result = await uploadBagFile(selectedFile, fileType);
-        console.log("Upload result:", result);
         toast.success("Bag file imported successfully.");
-        console.log("Import successful, closing dialog and resetting state.");
 
-        // Close dialog and reset state
+        // Close dialog and reset state after a successful upload.
         setShowTypeModal(false);
         setSelectedFile(null);
         onUploadSuccess?.();
@@ -110,25 +103,14 @@ export function UploadBagButton({ onUploadSuccess, disabled }: UploadBagButtonPr
   };
 
 
+  // Reset local state when the user backs out of the modal.
   const handleCancel = () => {
-    console.log("Cancel button clicked");
     setShowTypeModal(false);
     setSelectedFile(null);
   };
 
   return (
     <>
-      <input
-        type="file"
-        accept=".bag"
-        hidden
-        // onChange={handleFileChange}
-        onClick={(e) => {
-          // Stop propagation to prevent any parent handlers from interfering
-          e.stopPropagation();
-        }}
-        aria-label="Select .bag file"
-      />
       <Button
         type="button"
         variant="outline"
@@ -141,6 +123,7 @@ export function UploadBagButton({ onUploadSuccess, disabled }: UploadBagButtonPr
         Import .bag file
       </Button>
 
+      {/* Inline modal rendered in-place (no portal) so it works in more environments, e.g. Storybook. */}
       {showTypeModal && (
           <div
             style={{
