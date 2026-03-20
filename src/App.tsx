@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // Components
 import { Header } from "./components/Header";
@@ -12,40 +12,32 @@ import { toast } from "sonner";
 // Types
 import { Prediction } from "./types";
 
-// API Calling
+// API
 import {
   getPredictions,
-  getLatestPrediction,
   checkBackendHealth,
   deleteAllPredictions,
-  deletePrediction,
   exportPredictionsCSV,
   getBagFiles,
 } from "./services/api";
 import type { BagFile } from "./services/api";
 
-// // Constants
-// import { mockPredictions } from "./constants/mockData";
-
-// Utils
-import { exportPredictionsToCSV } from "./utils/csvExport";
-
 export default function App() {
   const [showCover, setShowCover] = useState(true);
-  const [isConnected, setIsConnected] = useState(false); // Would be updated via WebSocket in production
+  const [isFadingOut, setIsFadingOut] = useState(false);
+  const [showDashboard, setShowDashboard] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [bagFiles, setBagFiles] = useState<BagFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const fadeOutTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
 
-  // Derive latest prediction from predictions array (always first item)
   const latestPrediction = predictions[0] || null;
 
-  //Check backend health on mount and periodically
   useEffect(() => {
     const checkHealth = async () => {
       const healthy = await checkBackendHealth();
       setIsConnected(healthy);
-
 
       if (healthy) {
         loadPredictions();
@@ -54,12 +46,12 @@ export default function App() {
         setIsLoading(false);
       }
     };
+
     checkHealth();
-    const interval = setInterval(checkHealth, 30000); // Check every 30 seconds
+    const interval = setInterval(checkHealth, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  // Function to load predictions from backend
   const loadPredictions = async () => {
     try {
       setIsLoading(true);
@@ -72,8 +64,8 @@ export default function App() {
       }));
 
       setPredictions(convertedData);
-    } catch (error) {
-      toast.error("Failed to load predictions from backend");
+    } catch {
+      toast.error("Failed to load predictions");
     } finally {
       setIsLoading(false);
     }
@@ -84,7 +76,7 @@ export default function App() {
       const files = await getBagFiles();
       setBagFiles(files);
     } catch (error) {
-      console.error("Failed to load bag files:", error);
+      console.error(error);
     }
   };
 
@@ -96,40 +88,46 @@ export default function App() {
   const handleExportCSV = async () => {
     try {
       await exportPredictionsCSV();
-      toast.success("CSV exported successfully");
-    } catch (error) {
-      console.error("Error exporting CSV:", error);
-      toast.error("Failed to export CSV");
+      toast.success("CSV exported");
+    } catch {
+      toast.error("Export failed");
     }
   };
 
-
   const handleClearHistory = async () => {
-    if (window.confirm("Are you sure you want to clear all prediction history?")) {
-      try {
-        const success = await deleteAllPredictions();
-        if (success) {
-          setPredictions([]);
-          toast.success("History cleared");
-        } else {
-          toast.error("Failed to clear history");
-        }
-      } catch (error) {
-        console.error("Error clearing history:", error);
-        toast.error("Failed to clear history");
+    if (window.confirm("Clear all history?")) {
+      const success = await deleteAllPredictions();
+      if (success) {
+        setPredictions([]);
+        toast.success("History cleared");
       }
     }
   };
 
-  if (showCover) {
-    return <CoverPage onEnter={() => setShowCover(false)}/>;
-  }
+  const handleEnterDashboard = () => {
+    if (isFadingOut) return;
+    setIsFadingOut(true);
+    setShowDashboard(true);
+
+    fadeOutTimerRef.current = window.setTimeout(() => {
+      setShowCover(false);
+    }, 600);
+  };
 
   return (
-      <div className="min-h-screen bg-gray-50 animate-fade-in">
-        <Header/>
-
-        <MainNavigation
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-emerald-50 bg-fixed">
+      
+      {showCover && (
+        <div className={`absolute inset-0 z-10 ${isFadingOut ? "animate-fade-out" : ""}`}>
+          <CoverPage onEnter={handleEnterDashboard} disableIntroAnimation={isFadingOut} />
+        </div>
+      )}
+  
+      {showDashboard && (
+        <div className="relative z-20 min-h-screen animate-fade-in">
+          <Header />
+  
+          <MainNavigation
             isConnected={isConnected}
             latestPrediction={latestPrediction}
             predictions={predictions}
@@ -137,9 +135,12 @@ export default function App() {
             onExportCSV={handleExportCSV}
             onClearHistory={handleClearHistory}
             onUploadSuccess={handleUploadSuccess}
-        />
-
-        <Toaster/>
-      </div>
+          />
+  
+          <Toaster />
+        </div>
+      )}
+  
+    </div>
   );
 }

@@ -15,7 +15,7 @@ export function ImageWithFallback(props: ImgHTMLAttributes<HTMLImageElement>) {
 
   return didError ? (
     <div
-      className={cn("inline-block bg-gray-100 text-center align-middle", className)}
+      className={cn("inline-block bg-muted text-center align-middle", className)}
       style={style}
     >
       <div className="flex items-center justify-center w-full h-full">

@@ -117,7 +117,7 @@ export function UploadBagButton({ onUploadSuccess, disabled }: UploadBagButtonPr
         size="sm"
         onClick={handleButtonClick}
         disabled={disabled|| uploading}
-        className="gap-2"
+        className="gap-2 border-green-200/60 hover:border-green-200/70"
       >
         <Upload className="size-4" />
         Import .bag file
@@ -126,49 +126,30 @@ export function UploadBagButton({ onUploadSuccess, disabled }: UploadBagButtonPr
       {/* Inline modal rendered in-place (no portal) so it works in more environments, e.g. Storybook. */}
       {showTypeModal && (
           <div
-            style={{
-              position: 'fixed',
-              top: 0, left: 0, right: 0, bottom: 0,
-              backgroundColor: 'rgba(0,0,0,0.5)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 9999,
-            }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in"
+            style={{ animationDuration: '0.2s' }}
             onClick={() => { if (!uploading) handleCancel(); }}
           >
             <div
-              style={{
-                backgroundColor: 'white',
-                borderRadius: '8px',
-                padding: '24px',
-                maxWidth: '500px',
-                width: '90%',
-              }}
+              className="rounded-xl p-6 max-w-[500px] w-[90%] bg-card border-2 border-green-200/60 shadow-2xl transition-smooth animate-slide-up"
+              style={{ animationDuration: '0.3s', boxShadow: '0 25px 50px -12px rgba(45, 90, 39, 0.25)' }}
               onClick={(e) => e.stopPropagation()}
             >
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '8px' }}>
+              <h2 className="text-xl font-semibold mb-2 text-card-foreground">
                 Import .bag file
               </h2>
-              <p style={{ marginBottom: '24px', color: '#666' }}>
+              <p className="mb-6 text-muted-foreground">
                 Choose the file type for this recording. The file will be saved and registered in the database.
               </p>
 
-              <div style={{ marginBottom: '16px' }}>
+              <div className="mb-4">
                 <Label className="text-muted-foreground">File</Label>
-                <p style={{
-                  padding: '8px 12px',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '6px',
-                  backgroundColor: '#f8fafc',
-                  fontSize: '0.875rem',
-                  marginTop: '4px',
-                }}>
+                <p className="mt-1 py-2 px-3 rounded-md border border-border bg-muted/50 text-sm text-foreground">
                   {selectedFile?.name ?? "—"}
                 </p>
               </div>
 
-              <div style={{ marginBottom: '24px' }}>
+              <div className="mb-6">
                 <Label htmlFor="file-type-modal">File type</Label>
                 <Select
                   value={fileType}
@@ -184,11 +165,20 @@ export function UploadBagButton({ onUploadSuccess, disabled }: UploadBagButtonPr
                 </Select>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-                <Button variant="outline" onClick={handleCancel} disabled={uploading}>
+              <div className="flex justify-end gap-3">
+                <Button
+                  variant="outline"
+                  onClick={handleCancel}
+                  disabled={uploading}
+                  className="border-green-200/60 hover:border-green-200/70"
+                >
                   Cancel
                 </Button>
-                <Button onClick={handleImport} disabled={uploading || !selectedFile}>
+                <Button
+                  onClick={handleImport}
+                  disabled={uploading || !selectedFile}
+                  className="bg-green-600 hover:bg-green-700"
+                >
                   {uploading ? "Importing…" : "Import"}
                 </Button>
               </div>

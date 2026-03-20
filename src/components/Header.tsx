@@ -1,4 +1,5 @@
-import { FFBLogo } from "./FFBLogo";
+import * as React from "react";
+import { TreePalm } from "lucide-react";
 
 export function Header() {
   return (
@@ -6,7 +7,7 @@ export function Header() {
       <div className="container mx-auto px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
-            <FFBLogo className="text-white" size={24} />
+            <TreePalm className="w-6 h-6 text-white" />
           </div>
           <div>
             <h1 className="text-green-900">FFB Weight Prediction System</h1>

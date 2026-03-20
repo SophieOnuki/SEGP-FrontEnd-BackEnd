@@ -13,16 +13,21 @@ interface PredictionHistoryProps {
 
 export function PredictionHistory({ predictions, onExportCSV, onClearHistory }: PredictionHistoryProps) {
   return (
-    <Card>
+    <Card className="border-emerald-200 bg-emerald-50">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Prediction History</CardTitle>
           <div className="flex gap-2">
-            <Button onClick={onExportCSV} variant="outline" size="sm" className="gap-2">
+            <Button
+              onClick={onExportCSV}
+              variant="outline"
+              size="sm"
+              className="gap-2 border-green-200/60 hover:border-green-200/70"
+            >
               <Download className="w-4 h-4" />
               Export CSV
             </Button>
-            <Button onClick={onClearHistory} variant="outline" size="sm" className="gap-2 text-red-600 hover:text-red-700">
+            <Button onClick={onClearHistory} variant="outline" size="sm" className="gap-2 text-destructive hover:text-destructive/90">
               <Trash2 className="w-4 h-4" />
               Clear History
             </Button>
@@ -31,7 +36,7 @@ export function PredictionHistory({ predictions, onExportCSV, onClearHistory }: 
       </CardHeader>
       <CardContent>
         {predictions.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-muted-foreground">
             No history available
           </div>
         ) : (
@@ -39,10 +44,10 @@ export function PredictionHistory({ predictions, onExportCSV, onClearHistory }: 
             {predictions.map((prediction) => (
               <div
                 key={prediction.id}
-                className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-green-300 hover:bg-green-50/30 transition-colors"
+                className="bg-emerald-50/60 rounded-lg p-4 border border-emerald-200 hover:border-emerald-200/70 hover:bg-emerald-100/60 hover-lift-sm transition-smooth"
               >
                 <div className="flex gap-4">
-                  <div className="w-24 h-24 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
+                  <div className="w-24 h-24 bg-muted rounded-lg overflow-hidden flex-shrink-0">
                     <ImageWithFallback
                       src={prediction.imageUrl || DEFAULT_FFB_IMAGE}
                       alt="FFB"
@@ -54,16 +59,16 @@ export function PredictionHistory({ predictions, onExportCSV, onClearHistory }: 
                       <div className="space-y-2">
                         <div className="flex items-center gap-3">
                           <div className="flex items-center gap-1.5">
-                            <Weight className="w-4 h-4 text-green-700" />
-                            <span className="text-green-900">{prediction.weight.toFixed(2)} kg</span>
+                            <Weight className="w-4 h-4 text-secondary-foreground" />
+                            <span className="text-secondary-foreground font-medium">{prediction.weight.toFixed(2)} kg</span>
                           </div>
                           {prediction.volume !== undefined && (
-                            <span className="text-sm text-gray-600">
+                            <span className="text-sm text-muted-foreground">
                               • {prediction.volume.toFixed(2)} L
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-1.5 text-sm text-gray-600">
+                        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                           <Clock className="w-3.5 h-3.5" />
                           {prediction.timestamp.toLocaleString()}
                         </div>
