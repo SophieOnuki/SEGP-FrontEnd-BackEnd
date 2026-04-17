@@ -1,0 +1,13 @@
+# Odroid H3+ Deployment Requirements
+# Minimal dependencies for FFB detection inference
+
+# ONNX Runtime (recommended)
+onnxruntime>=1.15.0
+
+# Computer Vision
+opencv-python>=4.5.0
+numpy>=1.21.0
+pillow>=8.0.0
+
+# Optional: TensorFlow (if using TFLite model instead)
+# tensorflow>=2.10.0

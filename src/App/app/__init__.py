@@ -30,6 +30,8 @@ def create_app():
     from app.routes import register_routes
     register_routes(app)
 
+    # app.register_blueprint(camera_bp)
+
     return app
 
 def init_db():

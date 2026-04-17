@@ -13,8 +13,8 @@ export interface BackendPrediction {
 
     file?: {
         file_id: number;
-        filename: string;
-        file_type: 'RGB_D' | 'Depth';
+        file_name: string;
+        file_type: 'RGB-D' | 'Depth';
         upload_date: string;
     };
 }
@@ -56,7 +56,7 @@ export async function getBagFiles(): Promise<BagFile[]> {
 }
 
 /** Upload a .bag file; backend saves it and inserts a record into the database. */
-export async function uploadBagFile(file: File, fileType: BagFileType) {
+export async function uploadBagFile(file: File, fileType: BagFileType): Promise<{UploadResponse}> {
     console.log("=".repeat(50))
     console.log("Uploading file:", file.name, "of type:", fileType);
     console.log("File size:", file.size, "bytes");
@@ -73,7 +73,6 @@ export async function uploadBagFile(file: File, fileType: BagFileType) {
         const response = await fetch(`${API_BASE_URL}/api/upload`, {
             method: 'POST',
             body: formData,
-
         });
 
         console.log("Response status:", response.status);

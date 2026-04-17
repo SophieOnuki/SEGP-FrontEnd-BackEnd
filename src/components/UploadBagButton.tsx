@@ -19,7 +19,7 @@ import {
 } from "./ui/select";
 import { Upload } from "lucide-react";
 import { toast } from "sonner";
-import { uploadBagFile, type BagFileType } from "../services/api";
+import { uploadBagFile, type BagFileType, type UploadResponse } from "../services/api";
 
 // Button + modal flow for importing a .bag recording and registering it via the API.
 // The user first picks a file, then chooses the logical type (e.g. RGB-D vs Depth) before upload.
@@ -88,7 +88,7 @@ export function UploadBagButton({ onUploadSuccess, disabled }: UploadBagButtonPr
     setUploading(true);
     try {
         const result = await uploadBagFile(selectedFile, fileType);
-        toast.success("Bag file imported successfully.");
+        toast.success(`Bag file imported successfully. Predicted mass: ${result.mass_prediction.toFixed(2)}kg`);
 
         // Close dialog and reset state after a successful upload.
         setShowTypeModal(false);
