@@ -19,6 +19,7 @@ import {
   deleteAllPredictions,
   exportPredictionsCSV,
   getBagFiles,
+  type UploadResponse,
 } from "./services/api";
 import type { BagFile } from "./services/api";
 
@@ -61,6 +62,7 @@ export default function App() {
         id: pred.prediction_id.toString(),
         weight: pred.mass_prediction,
         timestamp: new Date(pred.created_at),
+        videoUrl: pred.videoUrl,
       }));
 
       setPredictions(convertedData);
@@ -80,10 +82,20 @@ export default function App() {
     }
   };
 
-  const handleUploadSuccess = () => {
-    loadPredictions();
-    loadBagFiles();
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+
+
+  const handleUploadSuccess = async (result: UploadResponse) => {
+  const newPrediction: Prediction = {
+    id: result.prediction.prediction_id.toString(),
+    weight: result.prediction.mass_prediction,
+    timestamp: new Date(result.prediction.created_at),
+    videoUrl: result.video_url ? `${API_BASE_URL}${result.video_url}`
+      : undefined,
   };
+  setPredictions((prev) => [newPrediction, ...prev]);
+  await loadBagFiles(); // refresh bag files list
+};
 
   const handleExportCSV = async () => {
     try {

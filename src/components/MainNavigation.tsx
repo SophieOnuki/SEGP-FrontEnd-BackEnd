@@ -3,7 +3,7 @@ import { DashboardPage } from "./DashboardPage";
 import { InformaticsPage } from "./InformaticsPage";
 import { UserManual } from "./UserManual";
 import { Prediction } from "../types";
-import type { BagFile } from "../services/api";
+import type { BagFile, UploadResponse } from "../services/api";
 
 interface MainNavigationProps {
   isConnected: boolean;
@@ -12,7 +12,7 @@ interface MainNavigationProps {
   bagFiles: BagFile[];
   onExportCSV: () => void;
   onClearHistory: () => void;
-  onUploadSuccess?: () => void;
+  onUploadSuccess?: (result: UploadResponse) => void;
 }
 
 export function MainNavigation({

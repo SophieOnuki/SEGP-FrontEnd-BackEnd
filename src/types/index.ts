@@ -4,5 +4,6 @@ export interface Prediction {
   volume?: number;
   timestamp: Date;
   imageUrl?: string;
+  videoUrl?: string;
 }
 

@@ -88,12 +88,12 @@ export function UploadBagButton({ onUploadSuccess, disabled }: UploadBagButtonPr
     setUploading(true);
     try {
         const result = await uploadBagFile(selectedFile, fileType);
-        toast.success(`Bag file imported successfully. Predicted mass: ${result.mass_prediction.toFixed(2)}kg`);
+        toast.success(`Bag file imported successfully. Predicted mass: ${result.prediction.mass_prediction.toFixed(2)}kg`);
 
         // Close dialog and reset state after a successful upload.
         setShowTypeModal(false);
         setSelectedFile(null);
-        onUploadSuccess?.();
+        onUploadSuccess?.(result);
     } catch (err) {
       console.error("Error during import:", err);
       toast.error(err instanceof Error ? err.message : "Failed to import .bag file.");

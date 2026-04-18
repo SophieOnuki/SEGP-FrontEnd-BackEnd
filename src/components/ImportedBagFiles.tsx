@@ -1,11 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { UploadBagButton } from "./UploadBagButton";
 import { FileArchive, Clock } from "lucide-react";
-import type { BagFile } from "../services/api";
+import type { BagFile, UploadResponse } from "../services/api";
 
 interface ImportedBagFilesProps {
   bagFiles: BagFile[];
-  onUploadSuccess?: () => void;
+  onUploadSuccess?: (result: UploadResponse) => void;
 }
 
 export function ImportedBagFiles({ bagFiles, onUploadSuccess }: ImportedBagFilesProps) {

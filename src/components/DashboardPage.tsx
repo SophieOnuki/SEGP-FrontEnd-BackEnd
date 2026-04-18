@@ -4,7 +4,7 @@ import { PredictionHistory } from "./PredictionHistory";
 import { ImportedBagFiles } from "./ImportedBagFiles";
 import { Sidebar } from "./Sidebar";
 import { Prediction } from "../types";
-import type { BagFile } from "../services/api";
+import type { BagFile, UploadResponse } from "../services/api";
 
 interface DashboardPageProps {
   isConnected: boolean;
@@ -13,7 +13,7 @@ interface DashboardPageProps {
   bagFiles: BagFile[];
   onExportCSV: () => void;
   onClearHistory: () => void;
-  onUploadSuccess?: () => void;
+  onUploadSuccess?: (result: UploadResponse) => void;
 }
 
 export function DashboardPage({

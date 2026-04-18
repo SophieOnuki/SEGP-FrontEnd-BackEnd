@@ -3,7 +3,6 @@ import glob
 import json
 import csv
 from pathlib import Path
-
 import cv2
 import numpy as np
 import pyrealsense2 as rs
@@ -488,20 +487,87 @@ def estimate_mass_from_pointclouds(ply_files):
 
     return summary
 
+def video_from_frames(frames_dir, frame_mass_dict, output_filename="ffb_prediction_video.mp4"):
+    """
+    Create a video from RGB frames with mask overlay and mass annotations.
+    Returns path to video or None if failed.
+    """
+    import imageio
+
+    output_path = os.path.join(frames_dir, output_filename)
+    print(f"[DEBUG] video_from_frames: output_path={output_path}")
+
+    rgb_files = sorted(glob.glob(os.path.join(frames_dir, "rgb_*.png")))
+    print(f"[DEBUG] Found {len(rgb_files)} RGB files")
+
+    if not rgb_files:
+        print("[WARN] No RGB frames found for video creation.")
+        return None
+
+    # Read first frame to get dimensions
+    sample_img = cv2.imread(rgb_files[0])
+    if sample_img is None:
+        print(f"[ERROR] Cannot read first RGB frame: {rgb_files[0]}")
+        return None
+
+    h, w = sample_img.shape[:2]
+
+    frames_list = []
+    for rgb_path in rgb_files:
+        img = cv2.imread(rgb_path)
+        if img is None:
+            continue
+
+        frame_index = os.path.basename(rgb_path).split("_")[1].split(".")[0]
+        mask_path = os.path.join(frames_dir, "masks", f"mask_{frame_index}.png")
+
+        if os.path.exists(mask_path):
+            mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
+            if mask is not None:
+                if mask.shape[:2] != (h, w):
+                    mask = cv2.resize(mask, (w, h), interpolation=cv2.INTER_NEAREST)
+                colour_mask = np.zeros_like(img)
+                colour_mask[:, :, 1] = mask
+                img = cv2.addWeighted(img, 0.7, colour_mask, 0.3, 0)
+                contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                cv2.drawContours(img, contours, -1, (0, 0, 255), 2)
+
+        if frame_index in frame_mass_dict:
+            mass = frame_mass_dict[frame_index]
+            cv2.putText(img, f"Mass: {mass:.2f} kg", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+        else:
+            cv2.putText(img, "No mass estimate", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+
+        #convert BGR (OpenCV) to RGB
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        frames_list.append(img_rgb)
+
+    if not frames_list:
+        print(f"[WARN] No frames found for video creation.")
+        return None
+
+    #Write H.264 MP4 video using imageio
+    imageio.mimwrite(output_path, frames_list, fps=10, codec='libx264', quality=8)
+    print(f"[INFO] Video created with imageio: {output_path} ({len(frames_list)} frames")
+
+    return output_path
+
 
 # =====================================================
 # MASTER PIPELINE
 # =====================================================
-def run_ffb_prediction(bag_path, ffb_id):
-   
+def run_ffb_prediction(bag_path, ffb_id, base_dir=None):
+    if base_dir is None:
+        base_dir = os.getcwd()  # fallback
+    frames_dir = os.path.join(base_dir, f"sample_{int(ffb_id):03d}")
+    os.makedirs(frames_dir, exist_ok=True)
+
     if not os.path.exists(bag_path):
         raise FileNotFoundError(f"Bag file not found: {bag_path}")
 
     if not os.path.exists(YOLO_MODEL_PATH):
         raise FileNotFoundError(f"YOLO ONNX model not found: {YOLO_MODEL_PATH}")
 
-    frames_dir = f"sample_{int(ffb_id):03d}"
-    os.makedirs(frames_dir, exist_ok=True)
 
     # -------------------------------------------------
     # 1. Extract bag frames
@@ -560,6 +626,17 @@ def run_ffb_prediction(bag_path, ffb_id):
     # -------------------------------------------------
     summary = estimate_mass_from_pointclouds(ply_files)
 
+    #-------------------------------------------------
+    # 6.5 Create video with annotations for visualization
+    #-------------------------------------------------
+    frame_mass_dict = {}
+    for fr in summary.get("all_frame_results", []):
+        index = fr["frame"].split("_")[2].split(".")[0]
+        frame_mass_dict[index] = fr["mass"]
+
+    video_path = video_from_frames(frames_dir, frame_mass_dict)
+    video_filename = os.path.basename(video_path) if video_path else None
+
     # -------------------------------------------------
     # 7. Return API-friendly result
     # -------------------------------------------------
@@ -567,7 +644,10 @@ def run_ffb_prediction(bag_path, ffb_id):
         "ffb_id": int(ffb_id),
         "bag_file": os.path.basename(bag_path),
         "frames_directory": frames_dir,
+        "video_absolute_path": video_path,
         **summary
     }
+
+    result["video_filename"] = video_filename
 
     return result

@@ -65,13 +65,28 @@ export function LatestPrediction({ prediction }: LatestPredictionProps) {
           </div>
 
           <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-200 shadow-sm hover:shadow-md transition-smooth">
-            <p className="text-sm text-muted-foreground mb-3">Captured Image</p>
+            <p className="text-sm text-muted-foreground mb-3">{prediction.videoUrl ? "Processed FFB Video" : "Captured Image"}</p>
             <div className="aspect-video bg-emerald-50/60 rounded-lg overflow-hidden ring-1 ring-emerald-200/50">
-              <ImageWithFallback
-                src={prediction.imageUrl || DEFAULT_FFB_IMAGE}
-                alt="FFB Capture"
-                className="w-full h-full object-cover"
-              />
+              {prediction.videoUrl ? (
+                  <>
+                  <p className="text-xs text-red-500 break-all">{prediction.videoUrl}</p>
+                  <video
+                    src={prediction.videoUrl}
+                    controls={true}
+                    autoPlay={true}
+                    loop={true}
+                    muted={true}
+                    playsInline={true}
+                    className="w-full h-full object-cover"
+                  />
+                </>
+              ) : (
+                <ImageWithFallback
+                  src={prediction.imageUrl || DEFAULT_FFB_IMAGE}
+                  alt="FFB Capture"
+                  className="w-full h-full object-cover"
+                />
+              )}
             </div>
           </div>
         </div>
