@@ -13,6 +13,8 @@ interface MainNavigationProps {
   onExportCSV: () => void;
   onClearHistory: () => void;
   onUploadSuccess?: (result: UploadResponse) => void;
+  onUploadStart?: () => void;
+  onUploadError?: () => void;
 }
 
 export function MainNavigation({
@@ -23,6 +25,8 @@ export function MainNavigation({
   onExportCSV,
   onClearHistory,
   onUploadSuccess,
+  onUploadStart,
+  onUploadError,
 }: MainNavigationProps) {
   return (
     <Tabs defaultValue="dashboard" className="w-full">
@@ -60,6 +64,8 @@ export function MainNavigation({
           onExportCSV={onExportCSV}
           onClearHistory={onClearHistory}
           onUploadSuccess={onUploadSuccess}
+          onUploadStart={onUploadStart}
+          onUploadError={onUploadError}
         />
       </TabsContent>
 

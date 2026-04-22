@@ -6,15 +6,21 @@ import type { BagFile, UploadResponse } from "../services/api";
 interface ImportedBagFilesProps {
   bagFiles: BagFile[];
   onUploadSuccess?: (result: UploadResponse) => void;
+  onUploadStart?: () => void;
+  onUploadError?: () => void;
 }
 
-export function ImportedBagFiles({ bagFiles, onUploadSuccess }: ImportedBagFilesProps) {
+export function ImportedBagFiles({ bagFiles, onUploadSuccess, onUploadStart, onUploadError }: ImportedBagFilesProps) {
   return (
     <Card className="border-emerald-200 bg-emerald-50">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Imported .bag files</CardTitle>
-          <UploadBagButton onUploadSuccess={onUploadSuccess} />
+          <UploadBagButton
+              onUploadSuccess={onUploadSuccess}
+              onUploadStart={onUploadStart}
+              onUploadError={onUploadError}
+          />
         </div>
       </CardHeader>
       <CardContent>

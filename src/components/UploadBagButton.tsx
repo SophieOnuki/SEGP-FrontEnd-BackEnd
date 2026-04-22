@@ -25,10 +25,12 @@ import { uploadBagFile, type BagFileType, type UploadResponse } from "../service
 // The user first picks a file, then chooses the logical type (e.g. RGB-D vs Depth) before upload.
 interface UploadBagButtonProps {
   onUploadSuccess?: () => void;
+  onUploadStart?: () => void;
+  onUploadError?: () => void;
   disabled?: boolean;
 }
 
-export function UploadBagButton({ onUploadSuccess, disabled }: UploadBagButtonProps) {
+export function UploadBagButton({ onUploadSuccess, onUploadStart, onUploadError, disabled }: UploadBagButtonProps) {
   // UI state for the inline modal and the current upload.
   const [showTypeModal, setShowTypeModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -84,19 +86,23 @@ export function UploadBagButton({ onUploadSuccess, disabled }: UploadBagButtonPr
       return;
     }
 
+    // Close the modal immediately so the progress overlay has the full screen
+    setShowTypeModal(false);
+
     // Mark UI as busy while the upload is in flight.
     setUploading(true);
+    onUploadStart?.();
+
     try {
         const result = await uploadBagFile(selectedFile, fileType);
         toast.success(`Bag file imported successfully. Predicted mass: ${result.prediction.mass_prediction.toFixed(2)}kg`);
 
-        // Close dialog and reset state after a successful upload.
-        setShowTypeModal(false);
         setSelectedFile(null);
         onUploadSuccess?.(result);
     } catch (err) {
       console.error("Error during import:", err);
       toast.error(err instanceof Error ? err.message : "Failed to import .bag file.");
+      onUploadError?.();
     } finally {
       setUploading(false);
     }

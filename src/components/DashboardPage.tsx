@@ -14,6 +14,8 @@ interface DashboardPageProps {
   onExportCSV: () => void;
   onClearHistory: () => void;
   onUploadSuccess?: (result: UploadResponse) => void;
+  onUploadStart?: () => void;
+  onUploadError?: () => void;
 }
 
 export function DashboardPage({
@@ -24,6 +26,8 @@ export function DashboardPage({
   onExportCSV,
   onClearHistory,
   onUploadSuccess,
+  onUploadStart,
+  onUploadError,
 }: DashboardPageProps) {
   return (
     <main className="container mx-auto px-6 py-6">
@@ -47,6 +51,8 @@ export function DashboardPage({
             <ImportedBagFiles
               bagFiles={bagFiles}
               onUploadSuccess={onUploadSuccess}
+              onUploadStart={onUploadStart}
+              onUploadError={onUploadError}
             />
           </div>
 

@@ -358,6 +358,15 @@ html {
   }
 }
 
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 0.8s linear infinite;
+}
+
 .cover-page-dark {
   position: relative;
   min-height: 100vh;
@@ -481,3 +490,5 @@ html {
 .transition-smooth-long {
   transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
 }
+
+
