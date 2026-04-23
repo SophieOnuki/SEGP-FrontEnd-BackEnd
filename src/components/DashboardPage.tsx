@@ -9,6 +9,7 @@ import type { BagFile, UploadResponse } from "../services/api";
 interface DashboardPageProps {
   isConnected: boolean;
   latestPrediction: Prediction | null;
+  frameMasses?: number[];
   predictions: Prediction[];
   bagFiles: BagFile[];
   onExportCSV: () => void;
@@ -21,6 +22,7 @@ interface DashboardPageProps {
 export function DashboardPage({
   isConnected,
   latestPrediction,
+  frameMasses,
   predictions,
   bagFiles,
   onExportCSV,
@@ -44,7 +46,7 @@ export function DashboardPage({
         <div className="space-y-6">
 
           <div className="bg-white/80 backdrop-blur-md rounded-xl border border-pink-100 shadow-sm hover:shadow-md transition">
-            <LatestPrediction prediction={latestPrediction} />
+            <LatestPrediction prediction={latestPrediction} frameMasses={frameMasses} />
           </div>
 
           <div className="bg-white/80 backdrop-blur-md rounded-xl border border-pink-100 shadow-sm hover:shadow-md transition">

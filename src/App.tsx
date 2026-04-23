@@ -33,6 +33,7 @@ export default function App() {
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [bagFiles, setBagFiles] = useState<BagFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [frameMasses, setFrameMasses] = useState<number[]>([]);
 
   //--Progress state for uploads--
   const [isUploading, setIsUploading] = useState(false);
@@ -135,12 +136,17 @@ export default function App() {
     id: result.prediction.prediction_id.toString(),
     weight: result.prediction.mass_prediction,
     timestamp: new Date(result.prediction.created_at),
-    videoUrl: result.video_url ? `${API_BASE_URL}${result.video_url}`
-      : undefined,
+    videoUrl: result.video_url ? `${API_BASE_URL}${result.video_url}` : undefined,
   };
   setPredictions((prev) => [newPrediction, ...prev]);
+
+   // Extract and filter masses: keep only masses between 0 and 100 kg
+  const allMasses = result.pipeline_result?.all_frame_results?.map((fr: any) => fr.mass) || [];
+  const reasonableMasses = allMasses.filter(m => m > 0 && m < 100);  // adjust upper bound as needed
+  setFrameMasses(reasonableMasses);
+
   stopUploadProgress(true);
-  await loadBagFiles(); // refresh bag files list
+  await loadBagFiles();
 };
 
   const handleUploadStart = () => {
@@ -214,6 +220,7 @@ export default function App() {
           <MainNavigation
             isConnected={isConnected}
             latestPrediction={latestPrediction}
+            frameMasses={frameMasses}
             predictions={predictions}
             bagFiles={bagFiles}
             onExportCSV={handleExportCSV}

@@ -17,7 +17,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 def create_app():
     """Create and configure Flask application"""
     app = Flask(__name__)
-    CORS(app, supports_credentials=True, origins=['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:3000', 'http://127.0.0.1:5173'])
+    CORS(app, supports_credentials=True, origins=['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001', 'http://127.0.0.1:5173'])
 
     # Configure file paths
     app.config["UPLOAD_FOLDER"] = os.path.join(os.getcwd(), "uploads")

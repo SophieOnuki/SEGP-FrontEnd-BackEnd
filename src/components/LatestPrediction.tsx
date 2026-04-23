@@ -1,20 +1,68 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Weight, Box, Clock } from "lucide-react";
 import { ImageWithFallback } from "./ImageWithFallback";
 import { Prediction } from "../types";
 import { DEFAULT_FFB_IMAGE } from "../constants/images";
+import MassHistogram from "./MassHistogram";
+
+const ODROID_STREAM_URL = "http://172.18.3.56:8080/";
 
 interface LatestPredictionProps {
   prediction: Prediction | null;
+  frameMasses?: number[];
 }
 
-export function LatestPrediction({ prediction }: LatestPredictionProps) {
+export function LatestPrediction({ prediction, frameMasses = [] }: LatestPredictionProps) {
+  const [streamError, setStreamError] = useState(false);
+  const [streamKey, setStreamKey] = useState(0);
+
   if (!prediction) {
+    // ... (keep the live camera feed exactly as before) ...
     return (
       <Card className="border-2 border-dashed border-emerald-200/80 bg-emerald-50 transition-smooth">
-        <CardContent className="flex items-center justify-center py-12">
-          <p className="text-muted-foreground">No prediction available</p>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              Live Camera Feed
+              {!streamError && (
+                <span className="flex items-center gap-1 text-xs font-normal text-emerald-600">
+                  <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  LIVE
+                </span>
+              )}
+            </CardTitle>
+            {streamError && (
+              <button
+                onClick={() => { setStreamError(false); setStreamKey((k) => k + 1); }}
+                className="text-xs px-3 py-1 rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition"
+              >
+                Retry
+              </button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="pb-4">
+          {streamError ? (
+            <div className="flex flex-col items-center justify-center h-56 rounded-lg bg-gray-100 text-gray-400 gap-2">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                  d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9A2.25 2.25 0 0013.5 5.25h-9A2.25 2.25 0 002.25 7.5v9A2.25 2.25 0 004.5 18.75z" />
+              </svg>
+              <span className="text-sm">Stream unavailable</span>
+              <span className="text-xs">{ODROID_STREAM_URL}</span>
+            </div>
+          ) : (
+            <img
+              key={streamKey}
+              src={ODROID_STREAM_URL}
+              alt="Live FFB camera feed"
+              onError={() => setStreamError(true)}
+              className="w-full rounded-lg object-contain bg-black"
+              style={{ maxHeight: "360px" }}
+            />
+          )}
         </CardContent>
       </Card>
     );
@@ -36,6 +84,7 @@ export function LatestPrediction({ prediction }: LatestPredictionProps) {
       </CardHeader>
       <CardContent>
         <div className="grid md:grid-cols-2 gap-6">
+          {/* Left: weight & volume */}
           <div className="space-y-4">
             <div className="bg-emerald-50 rounded-lg p-6 border border-emerald-200 shadow-sm hover:shadow-md transition-smooth">
               <div className="flex items-start gap-3">
@@ -48,7 +97,6 @@ export function LatestPrediction({ prediction }: LatestPredictionProps) {
                 </div>
               </div>
             </div>
-
             {prediction.volume !== undefined && (
               <div className="bg-emerald-50 rounded-lg p-6 border border-emerald-200 shadow-sm hover:shadow-md transition-smooth">
                 <div className="flex items-start gap-3">
@@ -64,32 +112,40 @@ export function LatestPrediction({ prediction }: LatestPredictionProps) {
             )}
           </div>
 
+          {/* ✅ Right side: Video (replaces static image) */}
           <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-200 shadow-sm hover:shadow-md transition-smooth">
-            <p className="text-sm text-muted-foreground mb-3">{prediction.videoUrl ? "Processed FFB Video" : "Captured Image"}</p>
-            <div className="aspect-video bg-emerald-50/60 rounded-lg overflow-hidden ring-1 ring-emerald-200/50">
+            <p className="text-sm text-muted-foreground mb-3">Processed Video</p>
+            <div className="aspect-video bg-black rounded-lg overflow-hidden ring-1 ring-emerald-200/50">
               {prediction.videoUrl ? (
-                  <>
-                  <p className="text-xs text-red-500 break-all">{prediction.videoUrl}</p>
-                  <video
-                    src={prediction.videoUrl}
-                    controls={true}
-                    autoPlay={true}
-                    loop={true}
-                    muted={true}
-                    playsInline={true}
-                    className="w-full h-full object-cover"
-                  />
-                </>
+                <video
+                  src={prediction.videoUrl}
+                  controls
+                  className="w-full h-full object-contain"
+                  autoPlay={false}
+                  controlsList="nodownload"
+                >
+                  Your browser does not support the video tag.
+                </video>
               ) : (
                 <ImageWithFallback
-                  src={prediction.imageUrl || DEFAULT_FFB_IMAGE}
-                  alt="FFB Capture"
+                  src={DEFAULT_FFB_IMAGE}
+                  alt="No video available"
                   className="w-full h-full object-cover"
                 />
               )}
             </div>
           </div>
         </div>
+
+        {/* Histogram (only when frame masses exist) */}
+        {frameMasses.length > 0 && (
+          <div className="mt-8 pt-4 border-t border-emerald-200">
+            <h3 className="text-md font-semibold text-emerald-800 mb-3">
+              Mass distribution per frame
+            </h3>
+            <MassHistogram masses={frameMasses} />
+          </div>
+        )}
       </CardContent>
     </Card>
   );

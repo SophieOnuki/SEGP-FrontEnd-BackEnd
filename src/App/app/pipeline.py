@@ -538,10 +538,10 @@ def video_from_frames(frames_dir, frame_mass_dict, output_filename="ffb_predicti
                     continue
 
                 # ── Calculate for bounding boxes ──
-                x1 = int(max(0, float(row["x1"]) * 8))
-                y1 = int(max(0, float(row["y1"]) * 8))
-                x2 = int(min(w, float(row["x2"]) * 8))
-                y2 = int(min(h, float(row["y2"]) * 8))
+                x1 = int(max(0, float(row["x1"])))
+                y1 = int(max(0, float(row["y1"])))
+                x2 = int(min(w, float(row["x2"])))
+                y2 = int(min(h, float(row["y2"])))
 
                 frame_boxes.setdefault(fname, []).append((x1, y1, x2, y2, conf))
             print(f"[INFO] Loaded bounding boxes for {len(frame_boxes)} frames from {det_csv}.")

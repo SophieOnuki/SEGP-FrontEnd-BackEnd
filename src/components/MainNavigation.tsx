@@ -8,6 +8,7 @@ import type { BagFile, UploadResponse } from "../services/api";
 interface MainNavigationProps {
   isConnected: boolean;
   latestPrediction: Prediction | null;
+  frameMasses?: number[];
   predictions: Prediction[];
   bagFiles: BagFile[];
   onExportCSV: () => void;
@@ -20,6 +21,7 @@ interface MainNavigationProps {
 export function MainNavigation({
   isConnected,
   latestPrediction,
+  frameMasses,
   predictions,
   bagFiles,
   onExportCSV,
@@ -59,6 +61,7 @@ export function MainNavigation({
         <DashboardPage
           isConnected={isConnected}
           latestPrediction={latestPrediction}
+          frameMasses={frameMasses}
           predictions={predictions}
           bagFiles={bagFiles}
           onExportCSV={onExportCSV}

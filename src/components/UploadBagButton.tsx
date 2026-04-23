@@ -9,7 +9,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "./ui/dialog";
-import MassHistogram from "./MassHistogram";
 import { Label } from "./ui/label";
 import {
   Select,
@@ -37,8 +36,6 @@ export function UploadBagButton({ onUploadSuccess, onUploadStart, onUploadError,
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileType, setFileType] = useState<BagFileType>("RGB-D");
   const [uploading, setUploading] = useState(false);
-  const [frameMasses, setFrameMasses] = useState<number[]>([]);
-  const [showHistogram, setShowHistogram] = useState(false);
 
   // Tracks whether we're currently in the process of opening a file picker (reserved for future use).
   const isSelectingFile = useRef(false);
@@ -100,9 +97,6 @@ export function UploadBagButton({ onUploadSuccess, onUploadStart, onUploadError,
         const result = await uploadBagFile(selectedFile, fileType);
         toast.success(`Bag file imported successfully. Predicted mass: ${result.prediction.mass_prediction.toFixed(2)}kg`);
 
-        const masses = result.pipeline_result?.all_frame_results?.map((fr: any) => fr.mass) || [];
-        setFrameMasses(masses);
-        setShowHistogram(true);
 
         setSelectedFile(null);
         onUploadSuccess?.(result);
@@ -198,12 +192,6 @@ export function UploadBagButton({ onUploadSuccess, onUploadStart, onUploadError,
             </div>
           </div>
 )}
-
-      {showHistogram && (
-      <div className="mt-8">
-        <MassHistogram masses={frameMasses} />
-      </div>
-    )}
     </>
   );
 }
