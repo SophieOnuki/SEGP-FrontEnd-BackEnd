@@ -2,19 +2,19 @@ import os
 import glob
 import json
 import csv
+import subprocess
 from pathlib import Path
 import cv2
 import numpy as np
 import pyrealsense2 as rs
 import onnxruntime as ort
-import open3d as o3d
 
 
 # =====================================================
 # CONFIGURATION
 # =====================================================
 
-YOLO_MODEL_PATH = "C:/Users/Navya/Desktop/Github files/SEGP-FrontEnd-BackEnd/src/App/ffb_detection/ffb_detection/runs/detect/train2/weights/best.onnx"
+YOLO_MODEL_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "Odriod", "odroid_h3_deployment", "ffb_yolo.onnx")
 
 DENSITY_KG_PER_M3 = 956.28
 PERCENTILE = 98
@@ -373,6 +373,21 @@ def generate_pointclouds(frames_dir, fx, fy, cx, cy, depth_scale):
     return saved_clouds
 
 
+def _read_ply_points(ply_path):
+    points = []
+    with open(ply_path, "r") as f:
+        in_header = True
+        for line in f:
+            if in_header:
+                if line.strip() == "end_header":
+                    in_header = False
+                continue
+            vals = line.strip().split()
+            if len(vals) >= 3:
+                points.append([float(vals[0]), float(vals[1]), float(vals[2])])
+    return np.array(points)
+
+
 # =====================================================
 # ELLIPSOID FITTING + MASS ESTIMATION
 # =====================================================
@@ -382,8 +397,9 @@ def ellipsoid_mass_from_ply(ply_path):
     Returns:
         mass, volume, (a, b, c)
     """
-    pcd = o3d.io.read_point_cloud(ply_path)
-    points = np.asarray(pcd.points)
+    # pcd = o3d.io.read_point_cloud(ply_path)
+    # points = np.asarray(pcd.points)
+    points = _read_ply_points(ply_path)
 
     if len(points) < MIN_POINTS:
         return None
@@ -492,13 +508,49 @@ def estimate_mass_from_pointclouds(ply_files):
 
     return summary
 
-def video_from_frames(frames_dir, frame_mass_dict, output_filename="ffb_prediction_video.mp4"):
+def _detect_bbox_for_display(img, session, input_name, output_name, conf_threshold=0.15):
+    """Run YOLO inference on a single frame and return the best (x1,y1,x2,y2) in image coords."""
+    h, w = img.shape[:2]
+    img_resized = cv2.resize(img, (640, 640))
+    img_rgb = cv2.cvtColor(img_resized, cv2.COLOR_BGR2RGB).astype(np.float32) / 255.0
+    img_input = np.expand_dims(np.transpose(img_rgb, (2, 0, 1)), axis=0)
+
+    raw = session.run([output_name], {input_name: img_input})[0]
+    # Output shape [1, 5, 8400]: channels are [cx, cy, w, h, conf] across 8400 anchors
+    preds = raw[0].T  # [8400, 5]
+
+    img_cx, img_cy = w / 2, h / 2
+    # Only accept detections whose center lies within the middle 60% of the frame
+    x_margin = w * 0.20
+    y_margin = h * 0.20
+    best_dist, best_box = float('inf'), None
+    for det in preds:
+        cx, cy, bw, bh, conf = det
+        if float(conf) < conf_threshold:
+            continue
+        det_cx = cx * w / 640
+        det_cy = cy * h / 640
+        if det_cx < x_margin or det_cx > w - x_margin:
+            continue
+        if det_cy < y_margin or det_cy > h - y_margin:
+            continue
+        dist = (det_cx - img_cx) ** 2 + (det_cy - img_cy) ** 2
+        if dist < best_dist:
+            best_dist = dist
+            x1 = int((cx - bw / 2) * w / 640)
+            y1 = int((cy - bh / 2) * h / 640)
+            x2 = int((cx + bw / 2) * w / 640)
+            y2 = int((cy + bh / 2) * h / 640)
+            best_box = (max(0, x1), max(0, y1), min(w - 1, x2), min(h - 1, y2))
+
+    return best_box
+
+
+def video_from_frames(frames_dir, frame_mass_dict, det_csv=None, output_filename="ffb_prediction_video.mp4"):
     """
     Create a video from RGB frames with mask overlay and mass annotations.
     Returns path to video or None if failed.
     """
-    import imageio
-
     output_path = os.path.join(frames_dir, output_filename)
     print(f"[DEBUG] video_from_frames: output_path={output_path}")
 
@@ -509,92 +561,77 @@ def video_from_frames(frames_dir, frame_mass_dict, output_filename="ffb_predicti
         print("[WARN] No RGB frames found for video creation.")
         return None
 
-    # Read first frame to get dimensions
     sample_img = cv2.imread(rgb_files[0])
     if sample_img is None:
         print(f"[ERROR] Cannot read first RGB frame: {rgb_files[0]}")
         return None
 
+    # Load YOLO model just for display bounding boxes
+    display_session = None
+    try:
+        import onnxruntime as ort
+        display_session = ort.InferenceSession(YOLO_MODEL_PATH)
+        display_input = display_session.get_inputs()[0].name
+        display_output = display_session.get_outputs()[0].name
+    except Exception as e:
+        print(f"[WARN] Could not load YOLO for display: {e}")
+
     h, w = sample_img.shape[:2]
+    temp_path = output_path.replace(".mp4", "_raw.mp4")
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    writer = cv2.VideoWriter(temp_path, fourcc, 10, (w, h))
 
-    #Load bounding boxes from detection CSV
-    det_csv = os.path.join(frames_dir, "detections_onnx.csv")
-    frame_boxes = {}
-
-    if os.path.exists(det_csv):
-        with open(det_csv, "r") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                try:
-                    fname = row["frame"]
-                    x1 = int(float(row["x1"]))
-                    y1 = int(float(row["y1"]))
-                    x2 = int(float(row["x2"]))
-                    y2 = int(float(row["y2"]))
-                    conf = float(row["conf"])
-                except (ValueError, KeyError):
-                    continue
-                if conf < CONF_THRESHOLD:
-                    continue
-
-                # ── Calculate for bounding boxes ──
-                x1 = int(max(0, float(row["x1"])))
-                y1 = int(max(0, float(row["y1"])))
-                x2 = int(min(w, float(row["x2"])))
-                y2 = int(min(h, float(row["y2"])))
-
-                frame_boxes.setdefault(fname, []).append((x1, y1, x2, y2, conf))
-            print(f"[INFO] Loaded bounding boxes for {len(frame_boxes)} frames from {det_csv}.")
-    else:
-        print("[WARN] detection_onnx.csv does not exist. No bounding boxes found.")
-
-    frames_list = []
-    for i, rgb_path in enumerate(rgb_files):
-        # Include ALL frames in video for smooth playback
+    for rgb_path in rgb_files:
         img = cv2.imread(rgb_path)
         if img is None:
             continue
 
-        frame_basename = os.path.basename(rgb_path)
         frame_index = os.path.basename(rgb_path).split("_")[1].split(".")[0]
 
-        # Draw mask overlay (only exists for pipeline frames)
-        mask_path = os.path.join(frames_dir, "masks", f"mask_{frame_index}.png")
-        if os.path.exists(mask_path):
-            mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
-            if mask is not None:
-                if mask.shape[:2] != (h, w):
-                    mask = cv2.resize(mask, (w, h), interpolation=cv2.INTER_NEAREST)
-                colour_mask = np.zeros_like(img)
-                colour_mask[:, :, 1] = mask
-                img = cv2.addWeighted(img, 0.7, colour_mask, 0.3, 0)
+        # Mask overlay intentionally removed — mask covers wrong region due to detection format mismatch
 
-        # Only draw bounding box on frames that were processed by the pipeline
-        if frame_basename in frame_boxes and os.path.exists(mask_path):
-            best_box = max(frame_boxes[frame_basename], key=lambda b: b[4])
-            x1, y1, x2, y2, conf = best_box
-            cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 255), 2)
-            cv2.putText(img, f"{conf:.2f}", (x1, max(y1 - 5, 0)),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
+        mass = frame_mass_dict.get(frame_index)
 
-        # Mass annotation (only for pipeline frames, blank for others)
-        if frame_index in frame_mass_dict:
-            mass = frame_mass_dict[frame_index]
-            cv2.putText(img, f"Mass: {mass:.2f} kg", (10, 30),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+        # Get bounding box from fresh inference (correct format) for display only
+        bbox = None
+        if display_session is not None:
+            bbox = _detect_bbox_for_display(img, display_session, display_input, display_output)
 
-        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        frames_list.append(img_rgb)
+        if bbox:
+            x1, y1, x2, y2 = bbox
+            cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            label = f"Mass: {mass:.2f} kg" if mass is not None else "FFB detected"
+            label_y = max(y1 - 10, 20)
+            cv2.putText(img, label, (x1, label_y), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+        elif mass is not None:
+            cv2.putText(img, f"Mass: {mass:.2f} kg", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
 
-    if not frames_list:
-        print(f"[WARN] No frames found for video creation.")
-        return None
+        writer.write(img)
 
-    #Write H.264 MP4 video using imageio
-    imageio.mimwrite(output_path, frames_list, fps=3, codec='libx264', quality=8)
-    print(f"[INFO] Video created with imageio: {output_path} ({len(frames_list)} frames")
+    writer.release()
+    print(f"[INFO] Raw video created: {temp_path}")
 
-    return output_path
+    # Re-encode to H.264 using bundled ffmpeg so browsers can play it
+    try:
+        import imageio_ffmpeg
+        ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+        result = subprocess.run(
+            [ffmpeg_exe, "-y", "-i", temp_path, "-vcodec", "libx264", "-pix_fmt", "yuv420p", output_path],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            os.remove(temp_path)
+            print(f"[INFO] H.264 video created: {output_path}")
+            return output_path
+        else:
+            print(f"[WARN] ffmpeg re-encode failed: {result.stderr[-500:]}")
+            os.rename(temp_path, output_path)
+            return output_path
+    except Exception as e:
+        print(f"[WARN] ffmpeg re-encode error: {e}, using raw video")
+        os.rename(temp_path, output_path)
+        return output_path
+>>>>>>> ce857b9 (Fix video bounding box display and remove debug URL)
 
 
 # =====================================================
@@ -678,7 +715,7 @@ def run_ffb_prediction(bag_path, ffb_id, base_dir=None):
         index = fr["frame"].split("_")[2].split(".")[0]
         frame_mass_dict[index] = fr["mass"]
 
-    video_path = video_from_frames(frames_dir, frame_mass_dict)
+    video_path = video_from_frames(frames_dir, frame_mass_dict, det_csv=det_csv)
     video_filename = os.path.basename(video_path) if video_path else None
 
     # -------------------------------------------------

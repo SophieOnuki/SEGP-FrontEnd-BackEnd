@@ -119,13 +119,13 @@ export function LatestPrediction({ prediction, frameMasses = [] }: LatestPredict
               {prediction.videoUrl ? (
                 <video
                   src={prediction.videoUrl}
-                  controls
-                  className="w-full h-full object-contain"
-                  autoPlay={false}
-                  controlsList="nodownload"
-                >
-                  Your browser does not support the video tag.
-                </video>
+                  controls={true}
+                  autoPlay={true}
+                  loop={true}
+                  muted={true}
+                  playsInline={true}
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 <ImageWithFallback
                   src={DEFAULT_FFB_IMAGE}
