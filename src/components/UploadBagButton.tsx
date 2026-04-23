@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "./ui/dialog";
+import MassHistogram from "./MassHistogram";
 import { Label } from "./ui/label";
 import {
   Select,
@@ -24,7 +25,7 @@ import { uploadBagFile, type BagFileType, type UploadResponse } from "../service
 // Button + modal flow for importing a .bag recording and registering it via the API.
 // The user first picks a file, then chooses the logical type (e.g. RGB-D vs Depth) before upload.
 interface UploadBagButtonProps {
-  onUploadSuccess?: () => void;
+  onUploadSuccess?: (result: UploadResponse) => void;
   onUploadStart?: () => void;
   onUploadError?: () => void;
   disabled?: boolean;
@@ -36,6 +37,8 @@ export function UploadBagButton({ onUploadSuccess, onUploadStart, onUploadError,
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileType, setFileType] = useState<BagFileType>("RGB-D");
   const [uploading, setUploading] = useState(false);
+  const [frameMasses, setFrameMasses] = useState<number[]>([]);
+  const [showHistogram, setShowHistogram] = useState(false);
 
   // Tracks whether we're currently in the process of opening a file picker (reserved for future use).
   const isSelectingFile = useRef(false);
@@ -96,6 +99,10 @@ export function UploadBagButton({ onUploadSuccess, onUploadStart, onUploadError,
     try {
         const result = await uploadBagFile(selectedFile, fileType);
         toast.success(`Bag file imported successfully. Predicted mass: ${result.prediction.mass_prediction.toFixed(2)}kg`);
+
+        const masses = result.pipeline_result?.all_frame_results?.map((fr: any) => fr.mass) || [];
+        setFrameMasses(masses);
+        setShowHistogram(true);
 
         setSelectedFile(null);
         onUploadSuccess?.(result);
@@ -191,6 +198,12 @@ export function UploadBagButton({ onUploadSuccess, onUploadStart, onUploadError,
             </div>
           </div>
 )}
+
+      {showHistogram && (
+      <div className="mt-8">
+        <MassHistogram masses={frameMasses} />
+      </div>
+    )}
     </>
   );
 }

@@ -181,11 +181,14 @@ def run_detection(frames_dir, detector):
                     continue
 
                 x, y, bw, bh = det[0:4]
+                print(f"[DEBUG] Raw det[0:4] = x={x:.4f}, y={y:.4f}, bw={bw:.4f}, bh={bh:.4f}")
 
                 x1 = float((x - bw / 2) * w / 640)
                 y1 = float((y - bh / 2) * h / 640)
                 x2 = float((x + bw / 2) * w / 640)
                 y2 = float((y + bh / 2) * h / 640)
+
+                print(f"[DEBUG] Box pixels: ({x1:.0f},{y1:.0f}) → ({x2:.0f},{y2:.0f}) | image={w}x{h}")
 
                 writer.writerow([
                     os.path.basename(rgb_path),
@@ -254,6 +257,8 @@ def generate_masks_from_csv(frames_dir, det_csv):
             x2 = min(w - 1, x2)
             y2 = min(h - 1, y2)
             cv2.rectangle(mask, (x1, y1), (x2, y2), 255, -1)
+
+            print(f"[DEBUG] Box pixels: ({x1:.0f},{y1:.0f}) → ({x2:.0f},{y2:.0f}) | image={w}x{h}")
 
         idx = frame_name.split("_")[1].split(".")[0]
         mask_path = os.path.join(out_mask_dir, f"mask_{idx}.png")
@@ -512,15 +517,49 @@ def video_from_frames(frames_dir, frame_mass_dict, output_filename="ffb_predicti
 
     h, w = sample_img.shape[:2]
 
+    #Load bounding boxes from detection CSV
+    det_csv = os.path.join(frames_dir, "detections_onnx.csv")
+    frame_boxes = {}
+
+    if os.path.exists(det_csv):
+        with open(det_csv, "r") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                try:
+                    fname = row["frame"]
+                    x1 = int(float(row["x1"]))
+                    y1 = int(float(row["y1"]))
+                    x2 = int(float(row["x2"]))
+                    y2 = int(float(row["y2"]))
+                    conf = float(row["conf"])
+                except (ValueError, KeyError):
+                    continue
+                if conf < CONF_THRESHOLD:
+                    continue
+
+                # ── Calculate for bounding boxes ──
+                x1 = int(max(0, float(row["x1"]) * 8))
+                y1 = int(max(0, float(row["y1"]) * 8))
+                x2 = int(min(w, float(row["x2"]) * 8))
+                y2 = int(min(h, float(row["y2"]) * 8))
+
+                frame_boxes.setdefault(fname, []).append((x1, y1, x2, y2, conf))
+            print(f"[INFO] Loaded bounding boxes for {len(frame_boxes)} frames from {det_csv}.")
+    else:
+        print("[WARN] detection_onnx.csv does not exist. No bounding boxes found.")
+
     frames_list = []
-    for rgb_path in rgb_files:
+    for i, rgb_path in enumerate(rgb_files):
+        # Include ALL frames in video for smooth playback
         img = cv2.imread(rgb_path)
         if img is None:
             continue
 
+        frame_basename = os.path.basename(rgb_path)
         frame_index = os.path.basename(rgb_path).split("_")[1].split(".")[0]
-        mask_path = os.path.join(frames_dir, "masks", f"mask_{frame_index}.png")
 
+        # Draw mask overlay (only exists for pipeline frames)
+        mask_path = os.path.join(frames_dir, "masks", f"mask_{frame_index}.png")
         if os.path.exists(mask_path):
             mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
             if mask is not None:
@@ -529,16 +568,21 @@ def video_from_frames(frames_dir, frame_mass_dict, output_filename="ffb_predicti
                 colour_mask = np.zeros_like(img)
                 colour_mask[:, :, 1] = mask
                 img = cv2.addWeighted(img, 0.7, colour_mask, 0.3, 0)
-                contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                cv2.drawContours(img, contours, -1, (0, 0, 255), 2)
 
+        # Only draw bounding box on frames that were processed by the pipeline
+        if frame_basename in frame_boxes and os.path.exists(mask_path):
+            best_box = max(frame_boxes[frame_basename], key=lambda b: b[4])
+            x1, y1, x2, y2, conf = best_box
+            cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 255), 2)
+            cv2.putText(img, f"{conf:.2f}", (x1, max(y1 - 5, 0)),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
+
+        # Mass annotation (only for pipeline frames, blank for others)
         if frame_index in frame_mass_dict:
             mass = frame_mass_dict[frame_index]
-            cv2.putText(img, f"Mass: {mass:.2f} kg", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
-        else:
-            cv2.putText(img, "No mass estimate", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+            cv2.putText(img, f"Mass: {mass:.2f} kg", (10, 30),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
 
-        #convert BGR (OpenCV) to RGB
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         frames_list.append(img_rgb)
 
@@ -547,7 +591,7 @@ def video_from_frames(frames_dir, frame_mass_dict, output_filename="ffb_predicti
         return None
 
     #Write H.264 MP4 video using imageio
-    imageio.mimwrite(output_path, frames_list, fps=10, codec='libx264', quality=8)
+    imageio.mimwrite(output_path, frames_list, fps=3, codec='libx264', quality=8)
     print(f"[INFO] Video created with imageio: {output_path} ({len(frames_list)} frames")
 
     return output_path
