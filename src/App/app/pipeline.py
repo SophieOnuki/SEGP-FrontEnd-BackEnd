@@ -181,14 +181,12 @@ def run_detection(frames_dir, detector):
                     continue
 
                 x, y, bw, bh = det[0:4]
-                print(f"[DEBUG] Raw det[0:4] = x={x:.4f}, y={y:.4f}, bw={bw:.4f}, bh={bh:.4f}")
 
                 x1 = float((x - bw / 2) * w / 640)
                 y1 = float((y - bh / 2) * h / 640)
                 x2 = float((x + bw / 2) * w / 640)
                 y2 = float((y + bh / 2) * h / 640)
 
-                print(f"[DEBUG] Box pixels: ({x1:.0f},{y1:.0f}) → ({x2:.0f},{y2:.0f}) | image={w}x{h}")
 
                 writer.writerow([
                     os.path.basename(rgb_path),
@@ -631,7 +629,7 @@ def video_from_frames(frames_dir, frame_mass_dict, det_csv=None, output_filename
         print(f"[WARN] ffmpeg re-encode error: {e}, using raw video")
         os.rename(temp_path, output_path)
         return output_path
->>>>>>> ce857b9 (Fix video bounding box display and remove debug URL)
+#(Fix video bounding box display and remove debug URL)
 
 
 # =====================================================

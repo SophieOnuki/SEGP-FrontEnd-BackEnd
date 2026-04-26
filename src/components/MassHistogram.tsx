@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import Plotly from 'plotly.js-dist-min';
 
 interface MassHistogramProps {
-  masses: number[];   // array of mass values in kg (from all_frame_results)
+  masses: number[];
 }
 
 const MassHistogram: React.FC<MassHistogramProps> = ({ masses }) => {
@@ -11,12 +11,10 @@ const MassHistogram: React.FC<MassHistogramProps> = ({ masses }) => {
   useEffect(() => {
     if (!chartRef.current || masses.length === 0) return;
 
-    // Calculate mean and standard deviation
     const mean = masses.reduce((a, b) => a + b, 0) / masses.length;
     const variance = masses.reduce((acc, m) => acc + Math.pow(m - mean, 2), 0) / masses.length;
     const std = Math.sqrt(variance);
 
-    // Generate Gaussian curve points (smooth)
     const minMass = Math.min(...masses);
     const maxMass = Math.max(...masses);
     const step = (maxMass - minMass) / 100;
@@ -29,7 +27,6 @@ const MassHistogram: React.FC<MassHistogramProps> = ({ masses }) => {
       yVals.push(y);
     }
 
-    // Histogram trace (probability density)
     const histTrace: Plotly.Data = {
       x: masses,
       type: 'histogram',
@@ -39,7 +36,6 @@ const MassHistogram: React.FC<MassHistogramProps> = ({ masses }) => {
       opacity: 0.7,
     };
 
-    // Gaussian curve trace
     const gaussTrace: Plotly.Data = {
       x: xVals,
       y: yVals,
@@ -51,11 +47,20 @@ const MassHistogram: React.FC<MassHistogramProps> = ({ masses }) => {
 
     const layout: Partial<Plotly.Layout> = {
       title: 'FFB Mass Distribution per Frame',
-      xaxis: { title: 'Mass (kg)', gridcolor: '#eee' },
-      yaxis: { title: 'Density', gridcolor: '#eee' },
+      xaxis: {
+        title: { text: 'Mass (kg)', font: { size: 14, weight: 'bold' } },
+        gridcolor: '#eee',
+        zeroline: false,
+      },
+      yaxis: {
+        title: { text: 'Probability Density', font: { size: 14, weight: 'bold' } },
+        gridcolor: '#eee',
+        zeroline: false,
+      },
       bargap: 0.05,
       legend: { x: 0.7, y: 0.95, bgcolor: 'rgba(255,255,255,0.8)' },
       hovermode: 'closest',
+      margin: { t: 50, l: 70, r: 30, b: 60 },
     };
 
     Plotly.newPlot(chartRef.current, [histTrace, gaussTrace], layout, { responsive: true });
