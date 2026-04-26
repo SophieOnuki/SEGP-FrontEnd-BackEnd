@@ -10,13 +10,6 @@ import {
   DialogTitle,
 } from "./ui/dialog";
 import { Label } from "./ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
 import { Upload } from "lucide-react";
 import { toast } from "sonner";
 import { uploadBagFile, type BagFileType, type UploadResponse } from "../services/api";
@@ -34,7 +27,7 @@ export function UploadBagButton({ onUploadSuccess, onUploadStart, onUploadError,
   // UI state for the inline modal and the current upload.
   const [showTypeModal, setShowTypeModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [fileType, setFileType] = useState<BagFileType>("RGB-D");
+  const fileType: BagFileType = "Depth";
   const [uploading, setUploading] = useState(false);
 
   // Tracks whether we're currently in the process of opening a file picker (reserved for future use).
@@ -68,7 +61,6 @@ export function UploadBagButton({ onUploadSuccess, onUploadStart, onUploadError,
 
     // Persist the chosen file and show the type-selection modal.
     setSelectedFile(file);
-    setFileType("RGB-D");
     setShowTypeModal(true);
 
     document.body.removeChild(input)
@@ -157,19 +149,10 @@ export function UploadBagButton({ onUploadSuccess, onUploadStart, onUploadError,
               </div>
 
               <div className="mb-6">
-                <Label htmlFor="file-type-modal">File type</Label>
-                <Select
-                  value={fileType}
-                  onValueChange={(v) => setFileType(v as BagFileType)}
-                >
-                  <SelectTrigger id="file-type-modal">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="RGB-D">RGB-D</SelectItem>
-                    <SelectItem value="Depth">Depth</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>File type</Label>
+                <p className="mt-1 py-2 px-3 rounded-md border border-border bg-muted/50 text-sm text-foreground">
+                  Depth
+                </p>
               </div>
 
               <div className="flex justify-end gap-3">

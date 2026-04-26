@@ -11,6 +11,7 @@ from pathlib import Path
 import onnxruntime as ort
 import cv2
 import numpy as np
+# import open3d as o3d 
 # import onnxruntime as ort
 # import pyrealsense2 as rs
 from flask import Flask, Response
@@ -252,7 +253,7 @@ def main():
     saved_rgb  = 0
     mass_results = []
 
-    print(f"\nStream  → http://<device-ip>:{STREAM_PORT}")
+    print(f"\nStream  → http://http://172.20.10.5:{8080}")
     print("Running pipeline. Ctrl+C to stop.\n")
 
     try:
